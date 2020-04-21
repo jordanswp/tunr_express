@@ -50,6 +50,72 @@ app.engine('jsx', reactEngine);
  * ===================================
  */
 
+ ///// registration
+app.get('/registration', (request, response) => {
+  // send response with some data (a string)
+  response.render('register');
+});
+
+app.post('/registration', (request, response) => {
+
+  let registerQuery = "INSERT INTO users (name, password) VALUES ($1, $2)";
+
+  var hashedPassword = sha256(request.body.password);
+
+  const values = [request.body.name, hashedPassword];
+
+  pool.query(registerQuery, values, (error, result)=>{
+    if( error ){
+      console.log("Error");
+      console.log(error);
+    }
+  })
+
+});
+
+app.get('/login', (request, response) => {
+  // send response with some data (a string)
+  response.render('login');
+});
+
+app.post('/login', (request, response) => {
+  console.log(request.body)
+
+  let getUserQuery = "SELECT * FROM users WHERE name=$1";
+
+  const values = [request.body.name];
+
+  pool.query(getUserQuery, values, (error, result)=>{
+    if( error ){
+      console.log("Error");
+      console.log(error);
+    }
+    console.log("SELECT RESULT:")
+    console.log(result.rows);
+
+    // if there is a result in the array
+    if( result.rows.length > 0 ){
+      // we have a match with the name
+
+      let requestPassword = request.body.password;
+
+      if(sha256( requestPassword) === result.rows[0].password){
+        response.cookie('logged in', 'true');
+        response.send("Welcome!");
+      }else{
+
+        response.status(403);
+        response.send("Please try again!");
+      }
+
+    }else{
+      // nothing matched
+      response.status(403);
+      response.send("sorry!");
+    }
+
+  })
+});
 //***** Display home page where all the artists are ******
 app.get('/artists',(request, response)=>{
   const whenQueryDone = (queryError, result) => {
